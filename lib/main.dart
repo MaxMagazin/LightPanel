@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
+import 'package:english_words/english_words.dart';
 
 
 void main() => runApp(MyApp());
@@ -59,11 +60,13 @@ class _LightPageState extends State<LightPage> {
 
 //    return _buildBody(screenWidth, screenHeight);
 
-    return Listener(
-        onPointerMove: (event) => _handlePointerMove(event),
-        onPointerDown: (event) => _handlePointerMove(event),
-        child: _buildBody(screenWidth, screenHeight),
-//        key: _keyLightPage,
+    return GestureDetector(
+        onLongPress: _handleLongPress,
+        child: Listener(
+          onPointerMove: (event) => _handlePointerMove(event),
+          onPointerDown: (event) => _handlePointerMove(event),
+          child: _buildBody(screenWidth, screenHeight),
+        )
     );
   }
 
@@ -71,10 +74,6 @@ class _LightPageState extends State<LightPage> {
 
     int rowsCount = height ~/ _size;
     int columnsCount = width ~/ _size;
-
-//    int rowsCount = 1;
-//    int columnsCount = 1;
-
 
     for (var i = 0; i < rowsCount; i++) {
       List<Color> row = new List<Color>();
@@ -96,7 +95,6 @@ class _LightPageState extends State<LightPage> {
       rows[i] = new Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: cols,
-//        key: _keyLightPage,
       );
     }
 
@@ -109,6 +107,8 @@ class _LightPageState extends State<LightPage> {
   Widget _buildItem(int i, int j) {
 
     Container itemContainer;
+
+    //first element with _keyLightPage (to track the offsets), all others without
     if (i == 0 && j == 0) {
       itemContainer = Container(
         width: _size,
@@ -153,5 +153,76 @@ class _LightPageState extends State<LightPage> {
     setState(() {});
 
 //    print('_handlePointerMove:' + x.toString() + ", " + y.toString());
+  }
+
+  void _handleLongPress() {
+    print('_handleLongPress:' );
+
+    _navigateToSettings(context);
+  }
+
+  void _navigateToSettings(BuildContext context) async {
+    final result = await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => SettingsScreen())
+    );
+
+    print('settings result: ' + result.toString());
+  }
+}
+
+class SettingsScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Settings"),
+      ),
+      body: Center(
+        child: RandomWords(),
+      ),
+    );
+  }
+}
+
+class RandomWords extends StatefulWidget {
+  @override
+  RandomWordsState createState() => new RandomWordsState();
+}
+
+class RandomWordsState extends State<RandomWords> {
+
+  final _suggestions = <WordPair>[];
+  final _biggerFont = const TextStyle(fontSize: 16.0);
+
+  @override
+  Widget build(BuildContext context) {
+    return _buildSuggestions();
+  }
+
+  Widget _buildSuggestions() {
+    return ListView.builder(
+        padding: const EdgeInsets.all(8.0),
+        itemBuilder: (context, i) {
+          if (i.isOdd) return Divider();
+
+          final index = i ~/ 2;
+          if (index >= _suggestions.length) {
+            _suggestions.addAll(generateWordPairs().take(10));
+          }
+          return _buildRow(_suggestions[index]);
+        });
+  }
+
+  Widget _buildRow(WordPair pair) {
+    return ListTile(
+      title: Text(
+        pair.asPascalCase,
+        style: _biggerFont,
+      ),
+      onTap: () {
+        Navigator.pop(context, pair.asPascalCase);
+      },
+    );
   }
 }
