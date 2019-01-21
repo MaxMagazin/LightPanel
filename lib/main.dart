@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:english_words/english_words.dart';
+import 'dart:io';
 
 
 void main() => runApp(MyApp());
@@ -34,6 +36,12 @@ class _LightPageState extends State<LightPage> {
   double _topPos = -1;
   double _leftPos = -1;
 
+  int _rowsCount = -1;
+  int _columnsCount = -1;
+
+  int _tappedX = -1;
+  int _tappedY = -1;
+
   List<List<Color>> _colorMatrix = new List<List<Color>>();
   Random _rand = new Random();
 
@@ -65,6 +73,7 @@ class _LightPageState extends State<LightPage> {
         child: Listener(
           onPointerMove: (event) => _handlePointerMove(event),
           onPointerDown: (event) => _handlePointerMove(event),
+          onPointerUp: _handlePointerUp(),
           child: _buildBody(screenWidth, screenHeight),
         )
     );
@@ -72,24 +81,25 @@ class _LightPageState extends State<LightPage> {
 
   Widget _buildBody(double width, double height) {
 
-    int rowsCount = height ~/ _size;
-    int columnsCount = width ~/ _size;
+    _rowsCount = height ~/ _size;
+    _columnsCount = width ~/ _size;
 
-    for (var i = 0; i < rowsCount; i++) {
+    for (var i = 0; i < _rowsCount; i++) {
       List<Color> row = new List<Color>();
 
-      for (var j = 0; j < columnsCount; j++) {
-        row.add(_generateRandColor());
+      for (var j = 0; j < _columnsCount; j++) {
+//        row.add(_generateRandColor());
+        row.add(Colors.grey);
       }
 
       _colorMatrix.add(row);
     }
 
-    List<Widget> rows = new List<Widget>(rowsCount);
-    for (int i = 0; i < rowsCount; i++) {
+    List<Widget> rows = new List<Widget>(_rowsCount);
+    for (int i = 0; i < _rowsCount; i++) {
 
-      List<Widget> cols = new List<Widget>(columnsCount);
-      for(int j = 0; j < columnsCount; j++) {
+      List<Widget> cols = new List<Widget>(_columnsCount);
+      for(int j = 0; j < _columnsCount; j++) {
         cols[j] = _buildItem(i, j);
       }
       rows[i] = new Row(
@@ -152,13 +162,37 @@ class _LightPageState extends State<LightPage> {
 
     setState(() {});
 
+    _tappedX = x;
+    _tappedY = y;
+
 //    print('_handlePointerMove:' + x.toString() + ", " + y.toString());
+  }
+
+  _handlePointerUp() {
+//    print('_handlePointerUp:' + _tappedX.toString() + ", " + _tappedY.toString());
   }
 
   void _handleLongPress() {
     print('_handleLongPress:' );
 
     _navigateToSettings(context);
+
+//    int x = _tappedX;
+//    int y = _tappedY;
+//
+//    for (; x >= 0 - _columnsCount || _tappedX + _tappedX - x <= _rowsCount + _columnsCount || y >= 0 || _tappedY + _tappedY - y <= _columnsCount;) {
+//
+//      new Future.delayed(const Duration(milliseconds: 1000), () => _updateLightPage(x,y));
+//
+//      x--;
+//      y--;
+//    }
+  }
+
+  void _updateCell(int x, int y) {
+    if (x >= 0 && x < _rowsCount && y >= 0 && y < _columnsCount) {
+      _colorMatrix[x][y] = _generateRandColor();
+    }
   }
 
   void _navigateToSettings(BuildContext context) async {
@@ -168,6 +202,61 @@ class _LightPageState extends State<LightPage> {
     );
 
     print('settings result: ' + result.toString());
+  }
+
+  void _updateLightPage(int x, int y) {
+    setState(() {
+
+      // to the top
+      _updateCell(x, _tappedY);
+
+      //to the bottom
+      int bottomX = _tappedX + _tappedX - x;
+      _updateCell(bottomX, _tappedY);
+
+      //to the left
+      _updateCell(_tappedX, y);
+
+      //to the right
+      int rightY = _tappedY + _tappedY - y;
+      _updateCell(_tappedX, rightY);
+
+      //top left
+      int xx = x + 1;
+      for (int yy = _tappedY - 1; yy > y; yy--) {
+        _updateCell(xx, yy);
+        if (xx < _tappedX) {
+          xx++;
+        }
+      }
+
+      //top right
+      xx = x + 1;
+      for (int yy = _tappedY + 1; yy < rightY; yy++) {
+        _updateCell(xx, yy);
+        if (xx < _tappedX) {
+          xx++;
+        }
+      }
+
+      //bottom right
+      xx = bottomX - 1;
+      for (int yy = _tappedY + 1; yy < rightY; yy++) {
+        _updateCell(xx, yy);
+        if (xx > _tappedX) {
+          xx--;
+        }
+      }
+
+      //bottom left
+      xx = bottomX - 1;
+      for (int yy = _tappedY - 1; yy > y; yy--) {
+        _updateCell(xx, yy);
+        if (xx > _tappedX) {
+          xx--;
+        }
+      }
+    });
   }
 }
 
